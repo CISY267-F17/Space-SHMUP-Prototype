@@ -17,6 +17,9 @@ public class Hero : MonoBehaviour
     [SerializeField]
     public float _shieldLevel = 1;
 
+    //Weapon fields
+    public Weapon[] weapons;
+
     public bool ___________________;
 
     public Bounds bounds;
@@ -26,10 +29,17 @@ public class Hero : MonoBehaviour
     //create a WeaponFireDelegate field named fireDelegate
     public WeaponFireDelegate fireDelegate;
 
-    private void Awake()
+    void Awake()
     {
         S = this; //setting singleton
         bounds = Utils.CombineBoundsOfChildren(this.gameObject);
+    }
+
+    void Start()
+    {
+        //reset the weapons to start the hero with one blaster
+        ClearWeapons();
+        weapons[0].SetType(WeaponType.blaster);
     }
 
     void Update ()
@@ -93,6 +103,12 @@ public class Hero : MonoBehaviour
                 Destroy(go);
             }
 
+            else if (go.tag == "PowerUp")
+            {
+                //if the shield was triggered by a powerup
+                AbsorbPowerUp(go);
+            }
+
             else
             {
                 print("Triggered: " + go.name);
@@ -102,6 +118,59 @@ public class Hero : MonoBehaviour
         {
             //otherwise announce the original other.gameObject
             print("Triggered: " + other.gameObject.name);
+        }
+    }
+
+    public void AbsorbPowerUp(GameObject go)
+    {
+        PowerUp pu = go.GetComponent<PowerUp>();
+        switch (pu.type)
+        {
+            case WeaponType.shield: //if its a shield
+                shieldLevel++;
+                break;
+
+            default: //if its any weapon powerup
+                //check the current weaponType
+                if (pu.type == weapons[0].type)
+                {
+                    //then increase the number of weapons of this type
+                    Weapon w = GetEmptyWeaponSlot(); //find an avaliable weapon
+                    if (w != null)
+                    {
+                        //set it to pu.type
+                        w.SetType(pu.type);
+                    }
+                }
+
+                else
+                {
+                    //if this is a different weapon
+                    ClearWeapons();
+                    weapons[0].SetType(pu.type);
+                }
+                break;
+        }
+        pu.AbsorbedBy(this.gameObject);
+    }
+
+    Weapon GetEmptyWeaponSlot()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (weapons[i].type == WeaponType.none)
+            {
+                return (weapons[i]);
+            }
+        }
+        return (null);
+    }
+
+    void ClearWeapons()
+    {
+        foreach (Weapon w in weapons)
+        {
+            w.SetType(WeaponType.none);
         }
     }
 
